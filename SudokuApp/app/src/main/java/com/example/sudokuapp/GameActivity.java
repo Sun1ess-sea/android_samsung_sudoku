@@ -1,11 +1,14 @@
 package com.example.sudokuapp;
 
+import android.util.Log;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.widget.Button;
 import android.widget.GridLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import java.util.Random;
@@ -19,8 +22,8 @@ public class GameActivity extends AppCompatActivity {
     private Button backButton;
     private Button clearButton;
 
-    private int[][] solutionBoard; // Полностью заполненная доска
-    private int[][] playerBoard;   // Игровая доска игрока
+    private int[][] solutionBoard;
+    private int[][] playerBoard;
 
     private Button[][] buttons;    // Ссылки на кнопки на игровом поле
     private int selectedNumber = 0; // Выбранное игроком число
@@ -40,16 +43,12 @@ public class GameActivity extends AppCompatActivity {
         backButton = findViewById(R.id.returnButton);
         clearButton = findViewById(R.id.clearButton);
 
-        // Получаем уровень сложности, переданный из DifficultyActivity
-        String difficulty = getIntent().getStringExtra("difficulty");
+        String difficulty = Session.getInstance().getLevel();
 
-        // Обработчик кнопки "Назад"
         backButton.setOnClickListener(v -> showExitConfirmationDialog());
 
-        // Обработчик кнопки "Очистить"
         clearButton.setOnClickListener(v -> toggleClearMode());
 
-        // Таймер
         startTimer();
 
         // Инициализация игры с уровнем сложности
@@ -120,30 +119,28 @@ public class GameActivity extends AppCompatActivity {
     private int getFilledCellsForDifficulty(String difficulty) {
         int filledCells = 0;
         switch (difficulty) {
-            case "easy":
+            case "Легкий":
                 filledCells = 78;
                 break;
-            case "medium":
-                filledCells = 45;
+            case "Средний":
+                filledCells = 60;
                 break;
-            case "hard":
-                filledCells = 35;
+            case "Сложный":
+                filledCells = 40;
                 break;
             default:
-                filledCells = 50;
+                filledCells = 55;
                 break;
         }
         return filledCells;
     }
 
     private void createSudokuGrid() {
-        // Получаем размеры экрана
         int screenWidth = getResources().getDisplayMetrics().widthPixels;
         int screenHeight = getResources().getDisplayMetrics().heightPixels;
 
-        // Учитываем отступы и делаем поле квадратным
         int gridSize = Math.min(screenWidth, screenHeight) - 64;
-        int cellSize = gridSize / 9; // Размер одной клетки
+        int cellSize = gridSize / 9;
 
         sudokuGrid.setRowCount(9);
         sudokuGrid.setColumnCount(9);
@@ -156,42 +153,41 @@ public class GameActivity extends AppCompatActivity {
                 final int currentRow = row;
                 final int currentCol = col;
 
-                // Обработка кликов для установки числа
                 cellButton.setOnClickListener(v -> {
                     if (!gameOver && selectedNumber != 0) {
                         setCellNumber(currentRow, currentCol, selectedNumber);
                     }
-
-                    // Если активен режим очистки, очищаем клетку
                     if (isClearMode && playerBoard[currentRow][currentCol] != 0) {
                         clearCell(currentRow, currentCol);
                     }
                 });
 
-                // Настройка параметров GridLayout
                 GridLayout.LayoutParams params = new GridLayout.LayoutParams();
                 params.rowSpec = GridLayout.spec(row);
                 params.columnSpec = GridLayout.spec(col);
+                params.width = cellSize;
+                params.height = cellSize;
 
-                params.width = cellSize;  // Квадратная ширина
-                params.height = cellSize; // Квадратная высота
-                params.setMargins(2, 2, 2, 2); // Границы между клетками
+                // Определяем толщину границ
+                int thickBorder = 6;  // Толстая граница
+                int thinBorder = 2;   // Обычная граница
 
+                int left = (col % 3 == 0) ? thickBorder : thinBorder;
+                int top = (row % 3 == 0) ? thickBorder : thinBorder;
+                int right = (col == 8) ? thickBorder : thinBorder;
+                int bottom = (row == 8) ? thickBorder : thinBorder;
+
+                params.setMargins(left, top, right, bottom);
                 cellButton.setLayoutParams(params);
-                cellButton.setBackgroundResource(R.drawable.cell_border);
 
-                // Настройка внешнего вида клеток
+                cellButton.setBackgroundColor(Color.WHITE);
+
+                // Устанавливаем число, если оно есть в начальном поле
                 int cellValue = playerBoard[row][col];
                 if (cellValue != 0) {
-                    // Установка текста для предзаполненной клетки
                     cellButton.setText(String.valueOf(cellValue));
-                    cellButton.setEnabled(false); // Блокируем неизменяемую клетку
-
-                    // Для предзаполненных клеток ставим лавандовый фон
-                    cellButton.setBackgroundColor(Color.parseColor("#E6E6FA")); // Лавандовый фон
-                } else {
-                    // Для пустых клеток оставляем белый фон с серой границей
-                    cellButton.setBackgroundColor(Color.WHITE);
+                    cellButton.setEnabled(false);
+                    cellButton.setBackgroundColor(Color.parseColor("#E6E6FA"));
                 }
 
                 sudokuGrid.addView(cellButton);
@@ -203,15 +199,55 @@ public class GameActivity extends AppCompatActivity {
         selectedNumber = number;
         // После выбора числа, выключаем режим очистки
         isClearMode = false;
-        clearButton.setBackgroundColor(Color.GRAY); // Возвращаем цвет кнопки очистки
+        clearButton.setBackgroundColor(Color.GRAY);
     }
 
     private void setCellNumber(int row, int col, int number) {
         if (playerBoard[row][col] == 0) {
             playerBoard[row][col] = number;
             buttons[row][col].setText(String.valueOf(number));
+
+            // Проверяем, правильно ли установлено число
+            if (number == solutionBoard[row][col]) {
+                buttons[row][col].setBackgroundColor(Color.WHITE);
+            } else {
+                buttons[row][col].setBackgroundColor(Color.RED);
+            }
+
+            // Проверяем, выиграл ли игрок
             if (isGameWon()) {
                 showWinDialog();
+
+                // Сохраняем финальное время перед форматированием
+                int finalSecondsElapsed = secondsElapsed;
+
+                // Переводим в формат "MM:SS"
+                int minutes = finalSecondsElapsed / 60;
+                int seconds = finalSecondsElapsed % 60;
+                String formattedTime = String.format("%02d:%02d", minutes, seconds);
+
+                // Получаем данные о пользователе и уровне
+                String username = Session.getInstance().getUsername();
+                String level = Session.getInstance().getLevel();
+
+                // Сохраняем данные в singleton
+                Session.getInstance().setTime(formattedTime);
+
+                // Логируем результаты
+                Log.d("GameActivity", "=== Победа ===");
+                Log.d("GameActivity", "Игрок: " + username);
+                Log.d("GameActivity", "Уровень: " + level);
+                Log.d("GameActivity", "Время: " + formattedTime);
+
+                DbRecordsHelper dbHelper = new DbRecordsHelper(this);
+                boolean isRecordSaved = dbHelper.addRecord(username, level, formattedTime);
+
+                // Проверка, был ли успешно сохранен рекорд
+                if (isRecordSaved) {
+                    Toast.makeText(this, "Рекорд сохранен!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Ошибка при сохранении рекорда", Toast.LENGTH_SHORT).show();
+                }
             }
         }
     }

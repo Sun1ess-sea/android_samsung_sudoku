@@ -34,16 +34,21 @@ public class RegistrationActivity extends AppCompatActivity {
                 String username = usernameEditText.getText().toString().trim();
                 String password = passwordEditText.getText().toString().trim();
 
-                if (dbHelper.checkUser(username, password)) {
+                // Хэшируем введенный пароль перед проверкой
+                String hashedPassword = Hashing.hashPassword(password);
+
+                if (dbHelper.checkUser(username, hashedPassword)) {
+                    Session.getInstance().setUsername(username);
+                    Session.getInstance().logCurrentState();
                     Toast.makeText(RegistrationActivity.this, "Добро пожаловать!", Toast.LENGTH_SHORT).show();
-                    // Переход на экран главного меню
                     startActivity(new Intent(RegistrationActivity.this, MainMenuActivity.class));
                     finish();
                 } else {
-                    Toast.makeText(RegistrationActivity.this, "Неверный логин или пароль", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RegistrationActivity.this, "Неверный логин или пароль!", Toast.LENGTH_SHORT).show();
                 }
             }
         });
+
 
         // Обработчик клика по кнопке "Регистрация"
         registerButton.setOnClickListener(new View.OnClickListener() {

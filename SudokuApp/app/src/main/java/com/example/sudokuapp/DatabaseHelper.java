@@ -33,23 +33,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public boolean addUser(String username, String password) {
+    public boolean addUser(String username, String hashedPassword) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_USERNAME, username);
-        values.put(COLUMN_PASSWORD, password);
-
+        values.put(COLUMN_PASSWORD, hashedPassword);
         long result = db.insert(TABLE_USERS, null, values);
         return result != -1;
     }
 
-    public boolean checkUser(String username, String password) {
+    public boolean checkUser(String username, String hashedPassword) {
         SQLiteDatabase db = this.getReadableDatabase();
-        String query = "SELECT * FROM " + TABLE_USERS + " WHERE " +
-                COLUMN_USERNAME + "=? AND " + COLUMN_PASSWORD + "=?";
-        Cursor cursor = db.rawQuery(query, new String[]{username, password});
-        boolean exists = cursor.moveToFirst();
-        cursor.close();
-        return exists;
+        Cursor cursor = null;
+        try {
+            String query = "SELECT * FROM " + TABLE_USERS + " WHERE " +
+                    COLUMN_USERNAME + "=? AND " + COLUMN_PASSWORD + "=?";
+            cursor = db.rawQuery(query, new String[]{username, hashedPassword});
+
+            return cursor.moveToFirst();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
     }
 }

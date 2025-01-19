@@ -40,11 +40,15 @@ public class NewUserActivity extends AppCompatActivity {
                     errorTextView.setText("Логин и пароль должны содержать только английские буквы и цифры");
                     errorTextView.setVisibility(View.VISIBLE);
                 } else {
-                    if (dbHelper.addUser(username, password)) {
+                    // Хэшируем пароль перед записью в БД
+                    String hashedPassword = Hashing.hashPassword(password);
+
+                    if (dbHelper.addUser(username, hashedPassword)) {
+                        Session.getInstance().setUsername(username);
+                        Session.getInstance().logCurrentState();
                         Toast.makeText(NewUserActivity.this, "Регистрация успешна", Toast.LENGTH_SHORT).show();
-                        // Переход на экран главного меню
                         startActivity(new Intent(NewUserActivity.this, MainMenuActivity.class));
-                        finish(); // Закрыть активность
+                        finish();
                     } else {
                         errorTextView.setText("Пользователь уже существует");
                         errorTextView.setVisibility(View.VISIBLE);
@@ -52,6 +56,7 @@ public class NewUserActivity extends AppCompatActivity {
                 }
             }
         });
+
 
         // Обработчик для кнопки "Вернуться назад"
         backButton.setOnClickListener(new View.OnClickListener() {

@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.sudokuapp" />
+                  <option name="mobileSdkAppId" value="1:873873786834:android:a51e3fa5d56647d53f6a0b" />
+                  <option name="projectId" value="app-example-23-b93f6" />
+                  <option name="projectNumber" value="873873786834" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
